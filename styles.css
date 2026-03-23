@@ -1,0 +1,149 @@
+:root {
+  --bg: #e8ecef;
+  --panel: #ffffff;
+  --ink: #1e252c;
+  --muted: #5d6772;
+  --accent: #d22a1f;
+  --ok: #1f8f4e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+  color: var(--ink);
+  background: radial-gradient(circle at 10% 10%, #f6f8fa 0%, var(--bg) 70%);
+}
+
+.app {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid #d8dee5;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.panel h1 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.instruction {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.96rem;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  border: 1px solid #b9c3cf;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 0.92rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: #8a99aa;
+}
+
+.stage-shell {
+  width: 100%;
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1280 / 720;
+  overflow: hidden;
+  border: 2px solid #3d464f;
+  border-radius: 8px;
+  background: #fff;
+  touch-action: none;
+}
+
+.layer {
+  position: absolute;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.piece {
+  position: absolute;
+  touch-action: none;
+  cursor: not-allowed;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: filter 120ms ease;
+}
+
+.piece img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.piece.active {
+  cursor: grab;
+  filter: drop-shadow(0 0 8px rgba(210, 42, 31, 0.45));
+}
+
+.piece.dragging {
+  cursor: grabbing;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.25));
+}
+
+.piece.placed {
+  cursor: default;
+  filter: drop-shadow(0 0 6px rgba(31, 143, 78, 0.45));
+}
+
+.target {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  margin-left: -17px;
+  margin-top: -17px;
+  border-radius: 999px;
+  border: 2px dashed rgba(210, 42, 31, 0.35);
+  background: rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.target.active {
+  opacity: 1;
+}
+
+.target.filled {
+  border-color: rgba(31, 143, 78, 0.5);
+}
+
+.status-done {
+  color: var(--ok);
+  font-weight: 600;
+}
