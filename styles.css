@@ -39,6 +39,42 @@ body {
   gap: 6px;
 }
 
+.home {
+  width: 100vw;
+  min-height: 100vh;
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.home-card {
+  width: min(560px, 94vw);
+  border: 1px solid #d8dee5;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.home-card h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.home-card p {
+  margin: 0;
+  color: #4d5a67;
+}
+
+.home-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid #d8dee5;
