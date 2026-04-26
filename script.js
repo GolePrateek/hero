@@ -6,7 +6,8 @@ const instruction = document.getElementById("instruction");
 const resetBtn = document.getElementById("resetBtn");
 
 const layers = [
-  { src: "resources/assets/image5.png", x: -5.0, y: -3.0, w: 1340.1, h: 750.9, z: 1 },
+  { src: "resources/assets/image2.png", x: 0.0, y: 0.0, w: 1280.0, h: 720.0, z: 0 },
+  { src: "resources/assets/image5.png", x: 0.0, y: 0.0, w: 1280.0, h: 720.0, z: 1 },
   { src: "resources/assets/image7.png", x: 476.1, y: 427.4, w: 254.6, h: 166.7, z: 2 },
   { src: "resources/assets/image9.png", x: 602.3, y: 567.9, w: 67.0, h: 26.2, z: 4 }
 ];

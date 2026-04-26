@@ -13,27 +13,30 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
   font-family: "Segoe UI", "Trebuchet MS", sans-serif;
   color: var(--ink);
   background: radial-gradient(circle at 10% 10%, #f6f8fa 0%, var(--bg) 70%);
+  overflow: hidden;
 }
 
 .app {
-  max-width: 1320px;
-  margin: 0 auto;
-  padding: 16px;
+  width: 100vw;
+  margin: 0;
+  padding: 4px;
+  height: 100dvh;
   display: grid;
-  gap: 12px;
+  grid-template-rows: auto 1fr;
+  gap: 6px;
 }
 
 .panel {
   background: var(--panel);
   border: 1px solid #d8dee5;
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: 6px;
+  padding: 8px 10px;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .panel h1 {
@@ -68,15 +71,23 @@ button:hover {
 
 .stage-shell {
   width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .stage {
   position: relative;
-  width: 100%;
+  width: auto;
+  height: 100%;
   aspect-ratio: 1280 / 720;
+  max-width: 100%;
+  max-height: 100%;
   overflow: hidden;
-  border: 2px solid #3d464f;
-  border-radius: 8px;
+  border: 1px solid #3d464f;
+  border-radius: 2px;
   background: #fff;
   touch-action: none;
 }
