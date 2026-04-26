@@ -3,7 +3,9 @@ const STAGE_H = 720;
 
 const stage = document.getElementById("stage");
 const instruction = document.getElementById("instruction");
+const progress = document.getElementById("progress");
 const resetBtn = document.getElementById("resetBtn");
+const calibrateMode = new URLSearchParams(window.location.search).has("calibrate");
 
 const layers = [
   { src: "resources/assets/image2.png", x: 0.0, y: 0.0, w: 1280.0, h: 720.0, z: 0 },
@@ -19,8 +21,11 @@ const sequence = [
     src: "resources/assets/image14.png",
     rect: { x: 405.9, y: 205.7, w: 94.5, h: 216.4 },
     z: 11,
-    target: { x: 233.1, y: 135.2 },
-    snap: 88
+    target: { x: 256.0, y: 135.4 },
+    anchor: { x: 0.46, y: 0.98 },
+    dropAnchor: { x: 0.46, y: 0.98 },
+    dropScale: 0.9,
+    snap: 120
   },
   {
     id: "kick-shaft",
@@ -29,7 +34,9 @@ const sequence = [
     rect: { x: 374.0, y: 376.3, w: 278.0, h: 176.2 },
     z: 10,
     rot: 84.2025,
-    target: { x: 566.0, y: 136.9 },
+    target: { x: 581.9, y: 134.3 },
+    anchor: { x: 0.5, y: 0.5 },
+    dropScale: 0.7,
     snap: 94
   },
   {
@@ -39,6 +46,8 @@ const sequence = [
     rect: { x: 683.5, y: 337.4, w: 52.0, h: 238.4 },
     z: 3,
     target: { x: 944.9, y: 135.2 },
+    anchor: { x: 0.5, y: 0.5 },
+    dropScale: 0.85,
     snap: 84
   },
   {
@@ -48,7 +57,10 @@ const sequence = [
     rect: { x: 623.8, y: 365.6, w: 35.1, h: 37.5 },
     z: 7,
     group: "bolt",
-    target: { x: 1248.0, y: 156.9 },
+    target: { x: 1258.7, y: 187.9 },
+    anchor: { x: 0.5, y: 0.5 },
+    dropAnchor: { x: 0.5, y: 0.5 },
+    dropScale: 0.8,
     snap: 76
   },
   {
@@ -58,7 +70,10 @@ const sequence = [
     rect: { x: 464.6, y: 393.8, w: 35.1, h: 37.5 },
     z: 8,
     group: "bolt",
-    target: { x: 1248.0, y: 156.9 },
+    target: { x: 1258.7, y: 187.9 },
+    anchor: { x: 0.5, y: 0.5 },
+    dropAnchor: { x: 0.5, y: 0.5 },
+    dropScale: 0.8,
     snap: 76
   },
   {
@@ -68,7 +83,10 @@ const sequence = [
     rect: { x: 739.1, y: 387.7, w: 35.1, h: 37.5 },
     z: 9,
     group: "bolt",
-    target: { x: 1248.0, y: 156.9 },
+    target: { x: 1258.7, y: 187.9 },
+    anchor: { x: 0.5, y: 0.5 },
+    dropAnchor: { x: 0.5, y: 0.5 },
+    dropScale: 0.8,
     snap: 76
   },
   {
@@ -78,7 +96,10 @@ const sequence = [
     rect: { x: 462.0, y: 301.3, w: 256.0, h: 406.1 },
     z: 6,
     rot: 270,
-    target: { x: 239.2, y: 383.7 },
+    target: { x: 226.4, y: 404.4 },
+    anchor: { x: 0.5, y: 0.5 },
+    dropAnchor: { x: 0.85, y: 0.15 },
+    dropScale: 0.38,
     snap: 96
   },
   {
@@ -88,7 +109,10 @@ const sequence = [
     rect: { x: 495.2, y: 355.8, w: 207.6, h: 315.4 },
     z: 5,
     rot: 270,
-    target: { x: 1248.0, y: 373.3 },
+    target: { x: 1138.0, y: 393.0 },
+    anchor: { x: 1.0, y: 0.5 },
+    dropAnchor: { x: 1.0, y: 0.15 },
+    dropScale: 0.42,
     snap: 94
   }
 ];
@@ -96,8 +120,15 @@ const sequence = [
 const pieces = new Map();
 const targets = [];
 const boltIds = new Set(sequence.filter((item) => item.group === "bolt").map((item) => item.id));
+const calibrationSteps = sequence.reduce((acc, item, idx) => {
+  if (item.group !== "bolt" || !acc.some((stepIdx) => sequence[stepIdx].group === "bolt")) {
+    acc.push(idx);
+  }
+  return acc;
+}, []);
 let step = 0;
 let dragState = null;
+let calibrationHud = null;
 
 function getCurrentItem() {
   return sequence[step] || null;
@@ -118,6 +149,10 @@ function pctX(value) {
 
 function pctY(value) {
   return `${(value / STAGE_H) * 100}%`;
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
 
 function setRect(node, rect) {
@@ -179,6 +214,14 @@ function makeTarget(item, index) {
   targets.push(t);
 }
 
+function syncTargetPositions() {
+  targets.forEach((targetNode, idx) => {
+    const item = sequence[idx];
+    targetNode.style.left = pctX(item.target.x);
+    targetNode.style.top = pctY(item.target.y);
+  });
+}
+
 function stagePoint(event) {
   const r = stage.getBoundingClientRect();
   return {
@@ -187,13 +230,159 @@ function stagePoint(event) {
   };
 }
 
-function getCenter(rect) {
-  return { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 };
+function getAnchor(item, rect) {
+  const anchor = item.anchor || { x: 0.5, y: 0.5 };
+  return {
+    x: rect.x + rect.w * anchor.x,
+    y: rect.y + rect.h * anchor.y
+  };
+}
+
+function rotatedBounds(item, rect) {
+  const angle = ((item.rot || 0) * Math.PI) / 180;
+  const c = Math.abs(Math.cos(angle));
+  const s = Math.abs(Math.sin(angle));
+  const w = rect.w;
+  const h = rect.h;
+  return {
+    w: w * c + h * s,
+    h: w * s + h * c
+  };
+}
+
+function clampRectToStage(item, rect) {
+  const rotated = rotatedBounds(item, rect);
+  const cx = clamp(rect.x + rect.w / 2, rotated.w / 2, STAGE_W - rotated.w / 2);
+  const cy = clamp(rect.y + rect.h / 2, rotated.h / 2, STAGE_H - rotated.h / 2);
+
+  return {
+    x: cx - rect.w / 2,
+    y: cy - rect.h / 2,
+    w: rect.w,
+    h: rect.h
+  };
+}
+
+function snapRect(item, scale = 1) {
+  const anchor = item.dropAnchor || item.anchor || { x: 0.5, y: 0.5 };
+  const w = item.rect.w * scale;
+  const h = item.rect.h * scale;
+  const rect = {
+    x: item.target.x - w * anchor.x,
+    y: item.target.y - h * anchor.y,
+    w,
+    h
+  };
+
+  return clampRectToStage(item, rect);
+}
+
+function placedCount() {
+  return sequence.filter((item) => item.placed).length;
+}
+
+function setCurrentTarget(point) {
+  const currentItem = getCurrentItem();
+  if (!currentItem) {
+    return;
+  }
+
+  if (currentItem.group === "bolt") {
+    sequence
+      .filter((item) => item.group === "bolt")
+      .forEach((item) => {
+        item.target = { x: point.x, y: point.y };
+      });
+  } else {
+    currentItem.target = { x: point.x, y: point.y };
+  }
+
+  syncTargetPositions();
+  activateStep();
+}
+
+function updateCalibrationHud(point) {
+  if (!calibrationHud) {
+    return;
+  }
+
+  const currentItem = getCurrentItem();
+  const id = currentItem ? currentItem.id : "done";
+  calibrationHud.textContent = `CALIBRATION MODE\nStep: ${step + 1}/${sequence.length} (${id})\nPointer: x=${point.x.toFixed(
+    1
+  )}, y=${point.y.toFixed(1)}\nShift+Tap/Click: set target\nN/P: next/prev calibration step\nR: reset`;
+}
+
+function onCalibrationPointerDown(event) {
+  if (!calibrateMode || !event.shiftKey) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  const p = stagePoint(event);
+  setCurrentTarget(p);
+
+  const currentItem = getCurrentItem();
+  if (currentItem) {
+    console.log(`target ${currentItem.id}: { x: ${p.x.toFixed(1)}, y: ${p.y.toFixed(1)} }`);
+  }
+}
+
+function onCalibrationPointerMove(event) {
+  if (!calibrateMode) {
+    return;
+  }
+  updateCalibrationHud(stagePoint(event));
+}
+
+function setCalibrationStep(nextStep) {
+  step = nextStep;
+  activateStep();
+
+  const item = getCurrentItem();
+  const p = item ? item.target : { x: 0, y: 0 };
+  updateCalibrationHud(p);
+}
+
+function onCalibrationKeyDown(event) {
+  if (!calibrateMode) {
+    return;
+  }
+
+  const key = event.key.toLowerCase();
+  if (key !== "n" && key !== "p" && key !== "r") {
+    return;
+  }
+
+  event.preventDefault();
+
+  if (key === "r") {
+    reset();
+    const item = getCurrentItem();
+    const p = item ? item.target : { x: 0, y: 0 };
+    updateCalibrationHud(p);
+    return;
+  }
+
+  const currentOrderIndex = calibrationSteps.findIndex((idx) => idx === step);
+  const fallbackIndex = calibrationSteps.findIndex((idx) => idx >= step);
+  const orderIndex = currentOrderIndex === -1 ? Math.max(0, fallbackIndex) : currentOrderIndex;
+
+  if (key === "n") {
+    setCalibrationStep(calibrationSteps[Math.min(orderIndex + 1, calibrationSteps.length - 1)]);
+  }
+
+  if (key === "p") {
+    setCalibrationStep(calibrationSteps[Math.max(orderIndex - 1, 0)]);
+  }
 }
 
 function activateStep() {
   const currentItem = getCurrentItem();
   const inBoltPhase = isBoltStep(currentItem);
+  const totalBolts = sequence.filter((item) => item.group === "bolt").length;
+  const placedBolts = sequence.filter((item) => item.group === "bolt" && item.placed).length;
 
   sequence.forEach((item, idx) => {
     const node = pieces.get(item.id);
@@ -202,16 +391,20 @@ function activateStep() {
   });
 
   targets.forEach((t, idx) => {
-    const isCurrent = idx === step;
+    const targetItem = sequence[idx];
+    const isCurrent = inBoltPhase ? targetItem.group === "bolt" && idx === step : idx === step;
     t.classList.toggle("active", isCurrent);
-    t.classList.toggle("filled", idx < step);
+    t.classList.toggle("filled", targetItem.placed);
+    if (inBoltPhase && targetItem.group === "bolt" && idx !== step) {
+      t.classList.remove("active");
+    }
   });
+
+  progress.textContent = `Placed ${placedCount()} / ${sequence.length}`;
 
   if (step < sequence.length && currentItem) {
     instruction.classList.remove("status-done");
     if (inBoltPhase) {
-      const totalBolts = sequence.filter((item) => item.group === "bolt").length;
-      const placedBolts = sequence.filter((item) => item.group === "bolt" && item.placed).length;
       instruction.textContent = `Drag ${currentItem.label} to its arrow target (${placedBolts}/${totalBolts}).`;
     } else {
       instruction.textContent = `Drag ${currentItem.label} to its arrow target.`;
@@ -219,6 +412,7 @@ function activateStep() {
   } else {
     instruction.classList.add("status-done");
     instruction.textContent = "Completed: all parts matched to their labels.";
+    progress.textContent = `Placed ${sequence.length} / ${sequence.length}`;
   }
 }
 
@@ -267,8 +461,15 @@ function onPointerMove(event) {
   const nextY = p.y - dragState.dy;
   const item = dragState.item;
 
-  item.current.x = Math.max(-item.rect.w * 0.6, Math.min(STAGE_W - item.rect.w * 0.4, nextX));
-  item.current.y = Math.max(-item.rect.h * 0.6, Math.min(STAGE_H - item.rect.h * 0.2, nextY));
+  const clamped = clampRectToStage(item, {
+    x: nextX,
+    y: nextY,
+    w: item.current.w,
+    h: item.current.h
+  });
+
+  item.current.x = clamped.x;
+  item.current.y = clamped.y;
 
   setRect(dragState.node, item.current);
 }
@@ -285,15 +486,15 @@ function onPointerUp(event) {
     node.releasePointerCapture(event.pointerId);
   }
 
-  const center = getCenter(item.current);
-  const dx = center.x - item.target.x;
-  const dy = center.y - item.target.y;
+  const anchorPoint = getAnchor(item, item.current);
+  const dx = anchorPoint.x - item.target.x;
+  const dy = anchorPoint.y - item.target.y;
   const dist = Math.hypot(dx, dy);
 
   if (dist <= item.snap) {
-    item.current.x = item.target.x - item.rect.w / 2;
-    item.current.y = item.target.y - item.rect.h / 2;
+    item.current = snapRect(item, item.dropScale || 1);
     setRect(node, item.current);
+    applyRotation(node, item);
     item.placed = true;
     node.classList.add("placed");
     node.classList.remove("active");
@@ -312,6 +513,7 @@ function reset() {
 
     const node = pieces.get(item.id);
     setRect(node, item.current);
+    applyRotation(node, item);
     node.classList.remove("placed", "dragging");
     node.style.zIndex = item.z;
   });
@@ -325,6 +527,18 @@ function init() {
     makePiece(item);
     makeTarget(item, index);
   });
+
+  syncTargetPositions();
+
+  if (calibrateMode) {
+    calibrationHud = document.createElement("pre");
+    calibrationHud.className = "calibration-hud";
+    stage.appendChild(calibrationHud);
+    updateCalibrationHud({ x: 0, y: 0 });
+    stage.addEventListener("pointerdown", onCalibrationPointerDown, true);
+    stage.addEventListener("pointermove", onCalibrationPointerMove);
+    window.addEventListener("keydown", onCalibrationKeyDown);
+  }
 
   stage.addEventListener("pointermove", onPointerMove);
   stage.addEventListener("pointerup", onPointerUp);
