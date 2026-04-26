@@ -75,6 +75,7 @@ body {
 .controls {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
 }
 
 button {
@@ -89,7 +90,25 @@ button {
   cursor: pointer;
 }
 
+.link-btn {
+  border: 1px solid #a8b4c2;
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-height: 44px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: #ffffff;
+  color: #1f2a35;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
 button:hover {
+  border-color: #8a99aa;
+}
+
+.link-btn:hover {
   border-color: #8a99aa;
 }
 
@@ -155,6 +174,32 @@ button:hover {
   cursor: default;
   filter: drop-shadow(0 0 6px rgba(31, 143, 78, 0.45));
   pointer-events: none;
+}
+
+.piece.brush-sweep {
+  animation: brushSweep 1.4s ease-in-out 1;
+}
+
+.piece.brush-sweep-loop {
+  animation: brushSweep 1.4s ease-in-out infinite;
+}
+
+@keyframes brushSweep {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  20% {
+    transform: translate(-18px, -4px) rotate(-8deg);
+  }
+  45% {
+    transform: translate(14px, 5px) rotate(6deg);
+  }
+  70% {
+    transform: translate(-12px, -2px) rotate(-5deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
 }
 
 .target {
