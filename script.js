@@ -230,6 +230,30 @@ function stagePoint(event) {
   };
 }
 
+function fitStageToShell() {
+  const shell = stage.parentElement;
+  if (!shell) {
+    return;
+  }
+
+  const maxW = shell.clientWidth;
+  const maxH = shell.clientHeight;
+  if (!maxW || !maxH) {
+    return;
+  }
+
+  let width = maxW;
+  let height = (width * STAGE_H) / STAGE_W;
+
+  if (height > maxH) {
+    height = maxH;
+    width = (height * STAGE_W) / STAGE_H;
+  }
+
+  stage.style.width = `${Math.floor(width)}px`;
+  stage.style.height = `${Math.floor(height)}px`;
+}
+
 function getAnchor(item, rect) {
   const anchor = item.anchor || { x: 0.5, y: 0.5 };
   return {
@@ -522,6 +546,8 @@ function reset() {
 }
 
 function init() {
+  fitStageToShell();
+
   layers.forEach(addLayer);
   sequence.forEach((item, index) => {
     makePiece(item);
@@ -544,6 +570,7 @@ function init() {
   stage.addEventListener("pointerup", onPointerUp);
   stage.addEventListener("pointercancel", onPointerUp);
   resetBtn.addEventListener("click", reset);
+  window.addEventListener("resize", fitStageToShell);
 
   activateStep();
 }
